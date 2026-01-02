@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitoring</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        label {
+            display: flex;
+            margin-bottom: 5px;
+            align-items: center;
+            gap: 10px;
+        }
+        section {
+            margin-bottom: 20px;
+            padding: 10px;
+            border: 1px solid #ccc;
+        }
+        input, button, select {
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        #password {
+            display: inline-block;
+            width: auto;
+        }
+        #output {
+            margin-top: 20px;
+            padding: 20px;
+            border: 1px solid #000;
+            background-color: #f9f9f9;
+            white-space: pre-wrap;
+            font-size: 16px;
+        }
+        #monitoring-exchange-name {
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <h1>Monitoring</h1>
+
+    <!-- Password -->
+    <label>Password:
+        <input type="text" id="password" placeholder="Enter password">
+    </label>
+
+    <!-- Debug Console -->
+    <section>
+        <h2>Debug Console</h2>
+        <label style="display: inline;">Log Level: </label>
+        <button data-action="log-trace">Trace</button>
+        <button data-action="log-debug">Debug</button>
+        <button data-action="log-info">Info</button>
+        <button data-action="log-success">Success</button>
+        <button data-action="log-warning">Warning</button>
+        <button data-action="log-error">Error</button>
+        <button data-action="log-critical">Critical</button>
+    </section>
+
+    <!-- Monitoring -->
+    <section>
+        <h2>Monitoring</h2>
+        <label>Exchange Name:</label>
+        <select id="monitoring-exchange-name">
+            <option value="BINANCE">BINANCE</option>
+            <option value="UPBIT">UPBIT</option>
+            <option value="BYBIT">BYBIT</option>
+            <option value="BITGET">BITGET</option>
+            <option value="OKX">OKX</option>
+            <option value="MEXC">MEXC</option>
+            <option value="GATE">GATE</option>
+        </select>
+        <button data-action="monitoring-params">View Params</button>
+        <button data-action="monitoring-symbols">View Symbols</button>
+        <button data-action="monitoring-signal-status">Signal Status</button>
+        <button data-action="monitoring-exchange-status">Exchange Status</button>
+        <hr>
+        <label>Shared Memory:</label>
+        <button data-action="monitoring-shared-memory">View Shared Memory</button>
+    </section>
+
+    <section>
+        <h2>Output</h2>
+        <div id="output">Responses will appear here...</div>
+    </section>
+
+    <script src="main.js"></script>
+</body>
+</html>

@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plug Ins</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        label {
+            display: flex;
+            margin-bottom: 5px;
+            align-items: center;
+            gap: 10px;
+        }
+        section {
+            margin-bottom: 20px;
+            padding: 10px;
+            border: 1px solid #ccc;
+        }
+        input, textarea, button, select {
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        #password {
+            display: inline-block;
+            width: auto;
+        }
+        #output {
+            margin-top: 20px;
+            padding: 20px;
+            border: 1px solid #000;
+            background-color: #f9f9f9;
+            white-space: pre-wrap;
+            font-size: 16px;
+        }
+        #monitoring-exchange-name {
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <h1>Plug Ins</h1>
+
+    <!-- Password -->
+    <label>Password:
+        <input type="text" id="password" placeholder="Enter password">
+    </label>
+
+    <!-- TradingView Hatiko -->
+    <section id="tv-hatiko-plugin" style="display: none;">
+        <h2>TradingView Hatiko</h2>
+        <h3>- Params Setting</h3>
+        <div>
+            <label style="display: inline;">Use Kill Confirm: 
+                <select id="use-kill-confirm">
+                    <option value="True">True</option>
+                    <option value="False">False</option>
+                </select>
+            </label>
+        </div>
+        <div>
+            <label style="display: inline;">Kill Minute: 
+                <input type="number" id="kill-minute" value="10" min="1" max="60">
+            </label>
+        </div>
+        <button data-action="tv-hatiko-set-params">Set Params</button>
+        <button data-action="tv-hatiko-view-params">View Params</button>
+        <hr style="margin: 10px 0;">
+        <h3>- Signal Status</h3>
+        <button data-action="tv-hatiko-view-signal-status">View Signal Status</button>
+    </section>
+
+    <!-- Symbol DB -->
+    <section id="symbol-db-plugin" style="display: none;">
+        <h2>Symbol DB</h2>
+        <!-- Symbol-Date Map -->
+        <h3>- Symbol-Date Map</h3>
+        <div>
+            <label style="display: inline;">Exchange Name:
+                <select id="symbol-db-symbol-date-map-exchange-name" >
+                    <option value="BINANCE">BINANCE</option>
+                    <option value="UPBIT">UPBIT</option>
+                    <option value="BYBIT">BYBIT</option>
+                    <option value="BITGET">BITGET</option>
+                    <option value="OKX">OKX</option>
+                    <option value="MEXC">MEXC</option>
+                    <option value="GATE">GATE</option>
+                </select>
+            </label>
+        </div>
+        <div>
+            <label style="display: inline;">Date:
+                <input type="date" id="symbol-db-symbol-date-map-date">
+            </label>
+            
+        </div>
+        <div>
+            <label>Symbols (comma-separated):</label>
+            <textarea id="symbol-db-symbol-date-map-multi-symbols" rows="5" placeholder="BTC/USDT, BTC/USDT.P, BTC/USDT:USDT, ..." style="display: block; width: 100%"></textarea>
+        </div>
+        <button data-action="symbol-db-symbol-date-map-set-symbol-date">Set Symbol-Date</button>
+        <button data-action="symbol-db-symbol-date-map-remove-from-pending-map">Remove from Pending Map</button>
+        <button data-action="symbol-db-symbol-date-map-view-pending-map">View Pending Map</button>
+        <!-- View Symbol DB -->
+        <h3>- View Symbol DB</h3>
+        <div>
+            <label style="display: inline;">Exchange Name:
+                <select id="symbol-db-view-symbol-db-exchange-name">
+                    <option value="BINANCE">BINANCE</option>
+                    <option value="UPBIT">UPBIT</option>
+                    <option value="BYBIT">BYBIT</option>
+                    <option value="BITGET">BITGET</option>
+                    <option value="OKX">OKX</option>
+                    <option value="MEXC">MEXC</option>
+                    <option value="GATE">GATE</option>
+                </select>
+            </label>
+        </div>
+        <fieldset style="margin-bottom: 10px;">
+            <legend>Exchanges to Exclude:</legend>
+            <label><input type="checkbox" name="symbol-db-view-symbol-db-exchanges-to-exclude" value="BINANCE"> BINANCE</label>
+            <label><input type="checkbox" name="symbol-db-view-symbol-db-exchanges-to-exclude" value="UPBIT"> UPBIT</label>
+            <label><input type="checkbox" name="symbol-db-view-symbol-db-exchanges-to-exclude" value="BYBIT"> BYBIT</label>
+            <label><input type="checkbox" name="symbol-db-view-symbol-db-exchanges-to-exclude" value="BITGET"> BITGET</label>
+            <label><input type="checkbox" name="symbol-db-view-symbol-db-exchanges-to-exclude" value="OKX"> OKX</label>
+            <label><input type="checkbox" name="symbol-db-view-symbol-db-exchanges-to-exclude" value="MEXC"> MEXC</label>
+            <label><input type="checkbox" name="symbol-db-view-symbol-db-exchanges-to-exclude" value="GATE"> GATE</label>
+        </fieldset>
+        <div>
+            <label style="display: inline;">Since:
+                <input type="date" id="symbol-db-view-symbol-db-since">
+            </label>
+        </div>
+        <div>
+            <label style="display: inline;">Market Type:
+                <select id="symbol-db-view-symbol-db-market-type">
+                    <option value="spot">Spot</option>
+                    <option value="swap">Perpetual</option>
+                </select>
+            </label>
+        </div>
+        <button data-action="symbol-db-view-symbol-db-sort-by-turnover">Sort by Turnover</button>
+        <button data-action="symbol-db-view-symbol-db-sort-by-date">Sort by Date</button>
+
+    </section>
+
+    <!-- KcTrend -->
+    <section id="kc-trend-plugin" style="display: none;">
+        <h2>KcTrend</h2>
+        <label style="display: inline;">Monitoring: </label>
+        <button data-action="kc-trend-view-status">View Status</button>
+    </section>
+
+    <!-- Output -->
+    <section>
+        <h2>Output</h2>
+        <div id="output">Responses will appear here...</div>
+    </section>
+
+
+    <!-- Scripts -->
+    <script>
+        // Fetch settings from FastAPI
+        fetch('/get_plugin_settings')
+            .then(response => response.json())
+            .then(settings => {
+                if (settings.use_tv_hatiko) {
+                    document.getElementById('tv-hatiko-plugin').style.display = 'block';
+                }
+                if (settings.use_symbol_db) {
+                    document.getElementById('symbol-db-plugin').style.display = 'block';
+                }
+                if (settings.use_kc_trend) {
+                    document.getElementById('kc-trend-plugin').style.display = 'block';
+                }
+            })
+            .catch(error => console.error('Error fetching plugin settings:', error));
+    </script>
+
+    <script src="main.js"></script>
+</body>
+</html>

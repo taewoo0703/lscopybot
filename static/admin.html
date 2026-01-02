@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        label {
+            display: flex;
+            margin-bottom: 5px;
+            align-items: center;
+            gap: 10px;
+        }
+        section {
+            margin-bottom: 20px;
+            padding: 10px;
+            border: 1px solid #ccc;
+        }
+        input, textarea, button, select {
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        #password {
+            display: inline-block;
+            width: auto;
+        }
+        #output {
+            margin-top: 20px;
+            padding: 20px;
+            border: 1px solid #000;
+            background-color: #f9f9f9;
+            white-space: pre-wrap;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Admin</h1>
+
+    <!-- Password -->
+    <label>Password:
+        <input type="text" id="password" placeholder="Enter password">
+    </label>
+
+    <!-- Use Whitelist -->
+    <section>
+        <h2>Use Whitelist</h2>
+        <label style="display: inline;">IP Whitelist:</label>
+        <button data-action="on-whitelist">On</button>
+        <button data-action="off-whitelist">Off</button>
+    </section>
+
+    <!-- Reset ExchangeManager -->
+    <section>
+        <h2>Core Control</h2>
+        <label>Exchange Name:</label>
+        <select id="core-control-exchange-name" style="width: 100%;">
+            <option value="BINANCE">BINANCE</option>
+            <option value="UPBIT">UPBIT</option>
+            <option value="BYBIT">BYBIT</option>
+            <option value="BITGET">BITGET</option>
+            <option value="OKX">OKX</option>
+            <option value="MEXC">MEXC</option>
+            <option value="GATE">GATE</option>
+        </select>
+        <button data-action="reset-exchange-manager">Reset ExchangeManager</button>
+        <button data-action="view-exchange-manager">View ExchangeManager</button>
+    </section>
+
+    <section>
+        <h2>PlugIn Control</h2>
+        <h3>- TradingView Hatiko</h3>
+        <label>Exchange Name:
+            <select id="tv-hatiko-exchange-name">
+                <option value="BINANCE">BINANCE</option>
+                <option value="UPBIT">UPBIT</option>
+                <option value="BYBIT">BYBIT</option>
+                <option value="BITGET">BITGET</option>
+                <option value="OKX">OKX</option>
+                <option value="MEXC">MEXC</option>
+                <option value="GATE">GATE</option>
+            </select>
+        </label>
+        <label style="display: block;">Symbols (comma-separated):</label>
+        <textarea id="tv-hatiko-symbols" rows="5" placeholder="BTC/USDT, BTC/USDT.P, BTC/USDT:USDT, ..." style="display: block; width: 100%"></textarea>
+        <button data-action="tv-hatiko-clean-signal-status">Clean Signal Status</button>
+        <button data-action="tv-hatiko-view-signal-status">View Signal Status</button>
+    </section>
+
+    <section>
+        <h2>Output</h2>
+        <div id="output">Responses will appear here...</div>
+    </section>
+
+    <script src="main.js"></script>
+</body>
+</html>

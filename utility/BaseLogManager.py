@@ -1,0 +1,238 @@
+import sys, traceback, asyncio, functools
+from datetime import datetime, timedelta, timezone
+from dhooks import Webhook, Embed
+from loguru import logger
+from typing import Literal
+
+LOGGER_LEVEL_LITERAL = Literal["TRACE", "DEBUG", "INFO", "SUCCESS", "WARNING", "ERROR", "CRITICAL"]
+LOGGER_LEVELS = ("TRACE", "DEBUG", "INFO", "SUCCESS", "WARNING", "ERROR", "CRITICAL")
+
+def log_level_under(level: LOGGER_LEVEL_LITERAL):
+    def decorator(func):
+        if asyncio.iscoroutinefunction(func):
+            @functools.wraps(func)
+            async def async_wrapper(self, *args, **kwargs):
+                if LOGGER_LEVELS.index(self.log_level) <= LOGGER_LEVELS.index(level):
+                    return await func(self, *args, **kwargs)
+                else:
+                    return None
+            return async_wrapper
+        else:
+            @functools.wraps(func)
+            def sync_wrapper(self, *args, **kwargs):
+                if LOGGER_LEVELS.index(self.log_level) <= LOGGER_LEVELS.index(level):
+                    return func(self, *args, **kwargs)
+                else:
+                    return None
+            return sync_wrapper
+    return decorator
+
+class BaseLogManager:
+    def __init__(self, discord_webhook_url: str | None = None):
+        self.discord_webhook_url = discord_webhook_url
+        self.log_level: LOGGER_LEVEL_LITERAL = "INFO"
+        # Logger 설정
+        logger.remove(0)
+        logger.add(
+            "./log/indeha.log",
+            rotation="1 days",
+            retention="7 days",
+            format="{time:YYYY-MM-DD HH:mm:ss} | {level} | {message}",
+            level="INFO"
+        )
+        self.console_handler_id = logger.add(
+            sys.stderr,
+            colorize=True,
+            format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level}</level> | <level>{message}</level>",
+            level=self.log_level
+        )
+        self.logger = logger
+
+        # Discord Webhook 설정
+        self.hook_async = None
+        try:
+            url = discord_webhook_url.replace("discordapp", "discord")
+            self.hook = Webhook(url)
+        except Exception as e:
+            logger.error("웹훅 URL이 유효하지 않습니다: {}", discord_webhook_url)
+            self.hook = None
+        
+        # Test Flag
+        self.test_mode: bool = False
+
+    def initialize(self):
+        try:
+            url = self.discord_webhook_url.replace("discordapp", "discord")
+            self.hook_async = Webhook.Async(url)
+        except Exception as e:
+            self.log_error_message(e, "BaseLogManager")
+            logger.error("웹훅 URL이 유효하지 않습니다: {}", self.discord_webhook_url)
+            self.hook_async = None
+
+    def set_console_log_level(self, level: LOGGER_LEVEL_LITERAL):
+        if level not in LOGGER_LEVELS:
+            raise ValueError(f"로그 레벨은 {LOGGER_LEVELS} 중 하나여야 합니다.")
+        # 기존 콘솔 핸들러 제거
+        logger.remove(self.console_handler_id)
+        # 새로운 콘솔 핸들러 추가 (레벨 변경)
+        self.console_handler_id = logger.add(
+            sys.stderr,
+            colorize=True,
+            format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level}</level> | <level>{message}</level>",
+            level=level,
+        )
+        self.log_level = level
+
+    def set_test_mode(self, test_mode: bool):
+        self.test_mode = test_mode
+
+    def get_error(self, e: Exception) -> str:
+        tb = traceback.extract_tb(e.__traceback__)
+        error_msg = []
+
+        for tb_info in tb:
+            error_msg.append(f"File {tb_info.filename}, line {tb_info.lineno}, in {tb_info.name}")
+            if "raise error." not in tb_info.line:
+                error_msg.append(f"  {tb_info.line}")
+
+        error_msg.append(str(e))
+        return "\n".join(error_msg)
+
+    def parse_time(self, utc_timestamp):
+        utc_datetime = datetime.fromtimestamp(utc_timestamp, timezone.utc)  # ex) 2021-08-24 06:00:00+00:00
+        kst_datetime = utc_datetime.astimezone(timezone(timedelta(hours=9)))    # ex) 2021-08-24 15:00:00+09:00
+        return kst_datetime.strftime("%y-%m-%d %H:%M:%S")   # ex) 21-08-24 15:00:00
+
+    ################################
+    # discord webhook
+    ################################
+    def log_message(self, message: str="None", embed: Embed = None):
+        try:
+            if self.hook:
+                if embed:
+                    self.hook.send(embed=embed)
+                else:
+                    self.hook.send(message)
+            else:
+                logger.info(message)
+        except Exception as e:
+            logger.error(f"웹훅 전송 중 에러가 발생했습니다: {e}")
+    
+    def log_error_message(self, error: str | Exception, name, description:str=None):
+        if isinstance(error, Exception):
+            error = self.get_error(error)
+
+        embed = Embed(title=f"{name} 에러", description=f"[{name} 에러가 발생했습니다]\n{error}", color=0xFF0000)
+        if description:
+            embed.add_field(name="Description", value=description, inline=False)
+        logger.error(f"{name} [에러가 발생했습니다]\n{error}")
+        self.log_message(embed=embed)
+
+    def log_warning_message(self, error: str|Exception, name, description:str=None):
+        if isinstance(error, Exception):
+            error = self.get_error(error)
+
+        embed = Embed(title=f"{name} 경고", description=f"[{name} 경고가 발생했습니다]\n{error}", color=0xFF0000)
+        if description:
+            embed.add_field(name="Description", value=description, inline=False)
+        logger.warning(f"{name} [경고가 발생했습니다]\n{error}")
+        self.log_debug_message(embed=embed)
+
+    @log_level_under("DEBUG")
+    def log_debug_message(self, message: str="None", embed: Embed = None):
+        self.log_message(message, embed)
+
+    @log_level_under("DEBUG")
+    def log_error_debug_message(self, error: str | Exception, name, description:str=None):
+        self.log_error_message(error, name, description)
+
+    @log_level_under("TRACE")
+    def log_trace_message(self, message: str="None", embed: Embed = None):
+        self.log_message(message, embed)
+
+    @log_level_under("TRACE")
+    def log_error_trace_message(self, error: str | Exception, name, description:str=None):
+        self.log_error_message(error, name, description)
+
+    ################################
+    # async discord webhook
+    ################################
+    async def log_message_async(self, message: str="None", embed: Embed = None):
+        try:
+            if self.hook_async:
+                if embed:
+                    await self.hook_async.send(embed=embed)
+                else:
+                    await self.hook_async.send(message)
+            else:
+                logger.info(message)
+        except Exception as e:
+            logger.error(f"웹훅 전송 중 에러가 발생했습니다: {e}")
+
+    async def log_error_message_async(self, error: str | Exception, name, description:str=None):
+        if isinstance(error, Exception):
+            error = self.get_error(error)
+
+        embed = Embed(title=f"{name} 에러", description=f"[{name} 에러가 발생했습니다]\n{error}", color=0xFF0000)
+        if description:
+            embed.add_field(name="Description", value=description, inline=False)
+        logger.error(f"{name} [에러가 발생했습니다]\n{error}")
+        await self.log_message_async(embed=embed)
+
+    async def log_warning_message_async(self, error: str|Exception, name, description:str=None):
+        if isinstance(error, Exception):
+            error = self.get_error(error)
+
+        embed = Embed(title=f"{name} 경고", description=f"[{name} 경고가 발생했습니다]\n{error}", color=0xFF0000)
+        if description:
+            embed.add_field(name="Description", value=description, inline=False)
+        logger.warning(f"{name} [경고가 발생했습니다]\n{error}")
+        await self.log_debug_message_async(embed=embed)
+
+    @log_level_under("DEBUG")
+    async def log_debug_message_async(self, message: str="None", embed: Embed = None):
+        await self.log_message_async(message, embed)
+    
+    @log_level_under("DEBUG")
+    async def log_error_debug_message_async(self, error: str | Exception, name, description:str=None):
+        await self.log_error_message_async(error, name, description)
+
+    @log_level_under("TRACE")
+    async def log_trace_message_async(self, message: str="None", embed: Embed = None):
+        await self.log_message_async(message, embed)
+
+    @log_level_under("TRACE")
+    async def log_error_trace_message_async(self, error: str | Exception, name, description:str=None):
+        await self.log_error_message_async(error, name, description)
+
+    ################################
+    # logger wrapper
+    ################################
+    def trace(self, message: str, for_test_mode: bool = False):
+        if not self.test_mode or for_test_mode:
+            logger.trace(message)
+
+    def debug(self, message: str, for_test_mode: bool = False):
+        if not self.test_mode or for_test_mode:
+            logger.debug(message)
+
+    def info(self, message: str, for_test_mode: bool = False):
+        if not self.test_mode or for_test_mode:
+            logger.info(message)
+
+    def success(self, message: str, for_test_mode: bool = False):
+        if not self.test_mode or for_test_mode:
+            logger.success(message)
+    
+    def warning(self, message: str, for_test_mode: bool = False):
+        if not self.test_mode or for_test_mode:
+            logger.warning(message)
+    
+    def error(self, message: str, for_test_mode: bool = False):
+        if not self.test_mode or for_test_mode:
+            logger.error(message)
+
+    def critical(self, message: str, for_test_mode: bool = False):
+        if not self.test_mode or for_test_mode:
+            logger.critical(message)
+
