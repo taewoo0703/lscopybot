@@ -12,9 +12,13 @@ class Core:
         self.emergency_control = emergencyControl
         # save/load
         current_dir = os.path.dirname(os.path.abspath(__file__))
-        self.params_dir = os.path.join(current_dir, "params")
+        project_dir = os.path.dirname(current_dir)  # core 폴더의 상위 폴더 (프로젝트 루트)
+        self.params_dir = os.path.join(project_dir, "params")
         # loop
         self.active = True  # loop active
+        # tasks
+        self.timer_task = None
+        self.emergency_task = None
 
     async def initialize(self):
         # load all parameters
@@ -23,11 +27,11 @@ class Core:
         self.set_betting_params(_betting_params, False)
 
         # set timer
-        timer_update_1s_task = asyncio.create_task(self.timer_update_1s())
-        timer_update_1s_task.add_done_callback(self.timer_update_done_callback)
+        self.timer_task = asyncio.create_task(self.timer_update_1s())
+        self.timer_task.add_done_callback(self.timer_update_done_callback)
 
         # start emergency control loop
-        emergency_control_task = asyncio.create_task(self.emergency_control_loop())
+        self.emergency_task = asyncio.create_task(self.emergency_control_loop())
 
         # init ExchangeManager
         await exchangeManager.initialize()
@@ -36,15 +40,35 @@ class Core:
         # save all parameters
         self.save_params()
 
+        # set active false to stop loops
+        self.active = False
+
+        # cancel tasks
+        if self.timer_task and not self.timer_task.done():
+            self.timer_task.cancel()
+            try:
+                await self.timer_task
+            except asyncio.CancelledError:
+                pass
+
+        if self.emergency_task and not self.emergency_task.done():
+            self.emergency_task.cancel()
+            try:
+                await self.emergency_task
+            except asyncio.CancelledError:
+                pass
+
         # shutdown complete
-        logManager.log_message("shutdown complete!")
+        await logManager.log_message_async("shutdown complete!")
 
 
     ##############################
     # Parameter setting
     ##############################
     def set_betting_params(self, _betting_params: BettingParams, save:bool = True):
-        betting_params = _betting_params
+        global betting_params
+        if _betting_params is not None:
+            betting_params = _betting_params
         if save:
             self.save_betting_params()
 
@@ -100,29 +124,24 @@ class Core:
         매 1초마다 on_timer_update 메서드 호출
         """
         while self.active:
-            now = datetime.now()
-            next_minute = (now.minute // 1 + 1) * 1
-            if next_minute == 60:
-                next_time = (now + timedelta(hours=1)).replace(minute=0, second=0, microsecond=0)
-            else:
-                next_time = now.replace(minute=next_minute, second=0, microsecond=0)
-            wait_time = (next_time - now).total_seconds()
-            logManager.debug(f"update_1s - {next_time}까지 대기: {wait_time}초")
-            await asyncio.sleep(wait_time)
-            await self.on_timer_update(next_time.timestamp(), "1s")
+            await asyncio.sleep(1)
+            await self.on_timer_update(time.time(), "1s")
 
     # on_timer - update
     async def on_timer_update(self, update_timestamp: float, timeframe: str):
         """
         update timer에 의해 호출되는 메서드
         """
-        pass
+        await exchangeManager.on_timer_update()
+        logManager.debug(f"on_timer_update - {timeframe} 완료")
 
     # done call back - update
     def timer_update_done_callback(self, task):
         self.active = False
         try:
-            if task.exception():
+            if task.cancelled():
+                logManager.log_message("update task was cancelled")
+            elif task.exception():
                 logManager.log_error_message(task.exception(), "update error")
             else:
                 logManager.log_message("update done")
@@ -130,7 +149,38 @@ class Core:
             logManager.log_error_message(e, "update error")
 
 
+    ##############################
+    # User Control
+    ##############################
+    def set_pause(self, pause: bool) -> None:
+        exchangeManager.set_pause(pause)
 
+    def get_status(self) -> dict:
+        """
+        master, slave1, slave2 연결 여부, 포지션 상태 반환
+        """
+        result = {
+            "connections": {
+                "master_connected": exchangeManager.master.connected,
+                "slave1_connected": exchangeManager.slave1.connected,
+                "slave2_connected": exchangeManager.slave2.connected,
+            },
+            "positions": {
+                "master_positions": exchangeManager.master_positions,
+                "slave1_positions": exchangeManager.slave1_positions,
+                "slave2_positions": exchangeManager.slave2_positions,
+            }
+        }
+        return result
+    
+    def get_params(self) -> dict:
+        """
+        현재 betting params 반환
+        """
+        result = {
+            "betting_params": betting_params
+        }
+        return result
 
 
             

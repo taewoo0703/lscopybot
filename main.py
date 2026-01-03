@@ -4,30 +4,42 @@ from fastapi.responses import ORJSONResponse, RedirectResponse
 from fastapi.exceptions import RequestValidationError
 from fastapi.staticfiles import StaticFiles
 import traceback, ipaddress, asyncio, os, json, httpx
+from contextlib import asynccontextmanager
 
 from settings import settings
 from protocol import *
 from core import *
 
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    logManager.initialize()
+    await core.initialize()
+    await logManager.log_message_async(f"LS Copy Bot 실행 완료! - 버전: {VERSION}")
+    
+    yield
+    
+    # Shutdown
+    try:
+        await core.on_shutdown()
+    except Exception as e:
+        logManager.log_error_message(f"Shutdown error: {e}", "Shutdown Error")
+
 
 # global instance
 VERSION = "LS Copy Bot ver 1.0"
 current_dir = os.path.dirname(os.path.abspath(__file__))
 static_dir = os.path.join(current_dir, "static")
-app = FastAPI(default_response_class=ORJSONResponse)
+app = FastAPI(default_response_class=ORJSONResponse, lifespan=lifespan)
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 ##############################
 # routing
 ##############################
-@app.get("/params")
-async def get_params():
-    return RedirectResponse(url="/static/params.html")
-
-@app.get("/monitoring")
-async def get_monitoring():
-    return RedirectResponse(url="/static/monitoring.html")
+@app.get("/")
+async def get_home():
+    return RedirectResponse(url="/static/home.html")
 
 @app.get("/admin")
 async def get_admin():
@@ -36,22 +48,6 @@ async def get_admin():
 ##############################
 # fundamental functinos
 ##############################
-@app.on_event("startup")
-async def startup():    
-    # initialize log manager
-    logManager.initialize()
-    
-    # initialize core
-    await core.initialize()
-
-    # initialize done
-    await logManager.log_message_async(f"LS Copy Bot 실행 완료! - 버전: {VERSION}")
-
-
-
-@app.on_event("shutdown")
-async def shutdown():
-    await core.on_shutdown()
 
 whitelist = [
     "127.0.0.1",
@@ -114,40 +110,13 @@ async def set_betting_params(request: BettingParamsRequest):
 ##########################################
 @app.post("/view_status")
 async def view_status(request: BaseRequest):
-    pass
-    # exchange_name = request.exchange_name
-    # symbol_list = core.get_symbol_list(exchange_name)
-
-    # result = {}
-    # if not settings.IS_SLAVE:
-    #     # master
-    #     result[exchange_name] = {"master": symbol_list}
-    #     if settings.SLAVE_DOMAINS:
-    #         for slave_domain in settings.SLAVE_DOMAINS:
-    #             result[exchange_name] |= {slave_domain: await get_slave_symbols(slave_domain, request)}
-    # else:
-    #     # slave
-    #     result = {exchange_name: symbol_list}
-
-    # return result
+    result = core.get_status()
+    return result
 
 @app.post("/view_params")
 async def view_params(request: BaseRequest):
-    pass
-    # betting_params = core.get_betting_params(exchange_name)
-
-    # result = {}
-    # if not settings.IS_SLAVE:
-    #     # master
-    #     result[exchange_name] = {"master": {"indicator_params": indicator_params, "signal_params": signal_params, "betting_params": betting_params}}
-    #     if settings.SLAVE_DOMAINS:
-    #         for slave_domain in settings.SLAVE_DOMAINS:
-    #             result[exchange_name] |= {slave_domain: await get_slave_params(slave_domain, request)}
-    # else:
-    #     # slave
-    #     result = {exchange_name: {"indicator_params": indicator_params, "signal_params": signal_params, "betting_params": betting_params}}
-        
-    # return result
+    result = core.get_params()
+    return result
 
 
 ##########################################
@@ -163,17 +132,15 @@ async def use_whitelist(use: str):
 ##########################################
 # external interrupt
 ##########################################
-# @app.post("/pause")
-# async def pause_hatiko(request: BaseRequest):
-#     exchange_name = request.exchange_name
-#     core.pause_hatiko(exchange_name)
-#     return True
+@app.post("/pause")
+async def pause(request: BaseRequest):
+    core.set_pause(True)
+    return f"Paused"
 
-# @app.post("/resume")
-# async def resume_hatiko(request: BaseRequest):
-#     exchange_name = request.exchange_name
-#     core.resume_hatiko(exchange_name)
-#     return True
+@app.post("/resume")
+async def resume(request: BaseRequest):
+    core.set_pause(False)
+    return f"Resumed"
 
 
 ##########################################

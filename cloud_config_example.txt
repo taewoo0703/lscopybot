@@ -1,0 +1,320 @@
+#cloud-config
+
+packages_update: true
+packages_upgrade: true
+
+packages:
+  - npm
+  - python3-pip
+  - python3.13-venv
+  - net-tools
+  - unzip
+  - ntp
+
+locale: ko_KR.UTF-8
+
+write_files:
+- path: /etc/systemd/system/pm2-root.service
+  owner: root:root
+  permissions: '0755'
+  content: |
+    [Unit]
+    Description=PM2 process manager
+    Documentation=https://pm2.keymetrics.io/
+    After=network.target
+
+    [Service]
+    Type=forking
+    User=root
+    LimitNOFILE=infinity
+    LimitNPROC=infinity
+    LimitCORE=infinity
+    Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin
+    Environment=PM2_HOME=/root/.pm2
+    PIDFile=/root/.pm2/pm2.pid
+    Restart=on-failure
+
+    ExecStart=/usr/local/lib/node_modules/pm2/bin/pm2 resurrect
+    ExecReload=/usr/local/lib/node_modules/pm2/bin/pm2 reload all
+    ExecStop=/usr/local/lib/node_modules/pm2/bin/pm2 kill
+
+    [Install]
+    WantedBy=multi-user.target
+
+- path: /etc/systemd/system/ntpd-sync.service
+  owner: root:root
+  permissions: '0755'
+  content: |
+    [Unit]
+    Description=Sync system time every 5 minutes
+
+    [Service]
+    Type=oneshot
+    ExecStart=/usr/sbin/ntpd -qg
+
+- path: /etc/systemd/system/ntpd-sync.timer
+  owner: root:root
+  permissions: '0755'
+  content: |
+    [Unit]
+    Description=Run ntpd-sync.service every 5 minutes
+
+    [Timer]
+    OnBootSec=5min
+    OnUnitActiveSec=5min
+
+    [Install]
+    WantedBy=timers.target
+
+- path: /etc/systemd/system/caddy.service
+  owner: root:root
+  permissions: '0755'
+  content: |
+    [Unit]
+    Description=Caddy
+    Documentation=https://caddyserver.com/docs/
+    After=network.target network-online.target
+    Requires=network-online.target
+
+    [Service]
+    Type=notify
+    User=root
+    Group=root
+    ExecStart=/usr/bin/caddy run --environ --config /etc/caddy/Caddyfile
+    ExecReload=/usr/bin/caddy reload --config /etc/caddy/Caddyfile --force
+    TimeoutStopSec=5s
+    LimitNOFILE=1048576
+    LimitNPROC=512
+    PrivateTmp=true
+    ProtectSystem=full
+    AmbientCapabilities=CAP_NET_BIND_SERVICE
+
+    [Install]
+    WantedBy=multi-user.target
+
+- path: /root/.env
+  content: |
+    PASSWORD=""
+    MASTER_APP_KEY=""
+    MASTER_SECRET_KEY=""
+    SLAVE1_APP_KEY=""
+    SLAVE1_SECRET_KEY=""
+    SLAVE2_APP_KEY=""
+    SLAVE2_SECRET_KEY=""
+    DISCORD_WEBHOOK_URL=""
+    WHITELIST=["허용할_IP_주소"]
+    PORT="80"
+    USE_WHITELIST="0"
+- path: /etc/environment
+  content: |
+    DOMAIN="내_도메인_주소"
+    APP_NAME="lscopybot"
+    KILL_TIMEOUT="600000"
+  append: true
+- path: /etc/caddy/Caddyfile
+  content: |
+    내_도메인_주소 {
+      reverse_proxy 127.0.0.1:8000
+    }
+- path: /root/.bash_functions
+  content: |
+    #! /bin/bash
+    # shellcheck disable=SC1091
+    source /etc/environment
+
+    if [[ -z "$DOMAIN" ]]; then
+      domain="127.0.0.1"
+      is_domain=false
+      port="80"
+    else
+      domain="$DOMAIN"
+      is_domain=true
+      port="8000"
+    fi
+
+    if [[ -z "$APP_NAME" ]]; then
+      app_name="lscopybot"
+    else
+      app_name=$APP_NAME
+    fi
+
+    if [[ -z "$KILL_TIMEOUT" ]]; then
+      kill_timeout="600000"
+    else
+      kill_timeout=$KILL_TIMEOUT
+    fi
+
+    app_dir="/root/$app_name"
+    interpreter_path="/root/$app_name/.venv/bin/python3.13"
+
+    print_env() {
+      echo "domain: $domain"
+      echo "port: $port"
+      echo "app_name: $app_name"
+    }
+    caddy_start() {
+      caddy start --config /etc/caddy/Caddyfile
+    }
+
+    caddy_run() {
+      caddy run --config /etc/caddy/Caddyfile
+    }
+
+    caddy_stop() {
+      caddy stop
+    }
+
+    flush() {
+      pm2 flush
+    }
+
+    monitor() {
+      pm2 logs
+    }
+
+    list() {
+      pm2 list
+    }
+
+    quit() {
+      if [[ $is_domain == true ]]; then
+        caddy_stop
+      fi
+
+      pm2 delete "$app_name"
+    }
+
+    stop() {
+      if [[ $is_domain == true ]]; then
+        caddy_stop
+      fi
+
+      pm2 stop "$app_name"
+    }
+
+    restart() {
+      if [[ $is_domain == true ]]; then
+        caddy_start
+      fi
+
+      flush
+      pm2 restart "$app_name"
+    }
+
+    activate() {
+      source "$app_dir/.venv/bin/activate"
+    }
+
+    start() {
+      quit
+      if [[ $is_domain == true ]]; then
+        caddy_start
+      fi
+
+      flush
+      pm2 start "$app_dir/run.py" --name "$app_name" --interpreter "$interpreter_path" --kill-timeout $kill_timeout -- --port="$port"
+    }
+
+    download_lscopybot() {
+      git clone https://github.com/taewoo0703/lscopybot.git "$app_dir"
+    }
+
+    download() {
+      git clone https://github.com/taewoo0703/lscopybot.git "$app_dir"
+    }
+
+    remove() {
+      cd /root
+      quit
+      rm -rf "$app_dir"
+    }
+
+    install() {
+      download
+      python3.13 -m venv "$app_dir/.venv"
+      $interpreter_path -m pip install -r "$app_dir"/requirements.txt
+    }
+
+    reinstall() {
+      cp -f "$app_dir"/.env /root
+      remove
+      install
+      cp -f "/root/.env" "$app_dir/.env"
+      rm -rf "/root/.env"
+    }
+
+    update() {
+      quit
+      cd "$app_dir"
+      git pull --rebase
+      cd /root
+      start
+    }
+
+    print_env
+
+    export -f print_env
+    export -f caddy_start
+    export -f caddy_run
+    export -f caddy_stop
+    export -f flush
+    export -f monitor
+    export -f list
+    export -f quit
+    export -f stop
+    export -f restart
+    export -f activate
+    export -f start
+    export -f download_lscopybot
+    export -f download
+    export -f remove
+    export -f install
+    export -f reinstall
+    export -f update
+- path: /root/.bashrc
+  content: |
+    if [ -f ~/.bash_functions ]; then
+      . ~/.bash_functions
+    fi
+  append: true
+
+runcmd:
+  - export HOME="/root"
+  - timedatectl set-timezone Asia/Seoul
+  - ufw allow ssh
+  - ufw allow 123/udp
+  - ufw allow https
+  - ufw allow http
+  - ufw --force enable
+  - npm install pm2@latest -g
+  - npm cache clean -f
+  - npm install n -g
+  - n stable
+  - n=0; while [ $n -lt 5 ] && ! wget https://github.com/caddyserver/caddy/releases/download/v2.6.4/caddy_2.6.4_linux_amd64.tar.gz; do echo "Command failed. Retrying in 5 seconds..."; sleep 5; n=$((n+1)); done
+  - tar -xf caddy_*_linux_amd64.tar.gz
+  - mv caddy /usr/bin/
+  - chmod +x /usr/bin/caddy
+  - rm -rf caddy_*_linux_amd64.tar.gz
+  - git clone  "https://github.com/taewoo0703/lscopybot.git" /root/lscopybot
+  - python3.13 -m venv /root/lscopybot/.venv
+  - /root/lscopybot/.venv/bin/python3.13 -m pip install -r /root/lscopybot/requirements.txt
+  - cd "/root"
+  - cp -f "/root/.env" "/root/lscopybot/.env"
+  - rm -rf "/root/.env"
+  - systemctl daemon-reload
+  - systemctl stop ntp
+  - systemctl disable ntp
+  - [systemctl, enable, pm2-root.service]
+  - [systemctl, start, pm2-root.service]
+  - [systemctl, enable, ntpd-sync.service]
+  - [systemctl, start, ntpd-sync.service]
+  - [systemctl, enable, ntpd-sync.timer]
+  - [systemctl, start, ntpd-sync.timer]
+  - [systemctl, enable, caddy.service]
+  - [systemctl, start, caddy.service]
+  - pm2 start "/root/lscopybot/run.py" --name "lscopybot" --interpreter "/root/lscopybot/.venv/bin/python3.13" --kill-timeout 600000 -- --port=8000
+  - pm2 save
+power_state:
+  delay: "now"
+  mode: reboot
+  message: Reboot

@@ -1,4 +1,4 @@
-import sys, traceback, asyncio, functools
+import sys, traceback, asyncio, functools, os
 from datetime import datetime, timedelta, timezone
 from dhooks import Webhook, Embed
 from loguru import logger
@@ -30,11 +30,17 @@ def log_level_under(level: LOGGER_LEVEL_LITERAL):
 class BaseLogManager:
     def __init__(self, discord_webhook_url: str | None = None):
         self.discord_webhook_url = discord_webhook_url
-        self.log_level: LOGGER_LEVEL_LITERAL = "INFO"
+        self.log_level: LOGGER_LEVEL_LITERAL = "TRACE"
+
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        project_root = os.path.dirname(current_dir) 
+        log_path = os.path.join(project_root, "log", "lscopybot.log")
+        os.makedirs(os.path.dirname(log_path), exist_ok=True)
+        
         # Logger 설정
         logger.remove(0)
         logger.add(
-            "./log/indeha.log",
+            log_path,
             rotation="1 days",
             retention="7 days",
             format="{time:YYYY-MM-DD HH:mm:ss} | {level} | {message}",

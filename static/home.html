@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Monitoring</title>
+    <title>Home</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -41,7 +41,7 @@
     </style>
 </head>
 <body>
-    <h1>Monitoring</h1>
+    <h1>Home</h1>
 
     <!-- Password -->
     <label>Password:
@@ -61,26 +61,24 @@
         <button data-action="log-critical">Critical</button>
     </section>
 
+    <!-- Betting Parameters -->
+    <section>
+        <h2>Betting Parameters</h2>
+        <!-- Add betting parameters inputs and buttons here -->
+        <label>Slave 1 Multiple:
+            <input type="number" id="betting-slave1-multiple" placeholder="Enter Slave 1 Multiple" min="1" step="1">
+        </label>
+        <label>Slave 2 Multiple:
+            <input type="number" id="betting-slave2-multiple" placeholder="Enter Slave 2 Multiple" min="1" step="1">
+        </label>
+        <button data-action="apply-betting-params">Apply</button>
+    </section>
+    
     <!-- Monitoring -->
     <section>
         <h2>Monitoring</h2>
-        <label>Exchange Name:</label>
-        <select id="monitoring-exchange-name">
-            <option value="BINANCE">BINANCE</option>
-            <option value="UPBIT">UPBIT</option>
-            <option value="BYBIT">BYBIT</option>
-            <option value="BITGET">BITGET</option>
-            <option value="OKX">OKX</option>
-            <option value="MEXC">MEXC</option>
-            <option value="GATE">GATE</option>
-        </select>
-        <button data-action="monitoring-params">View Params</button>
-        <button data-action="monitoring-symbols">View Symbols</button>
-        <button data-action="monitoring-signal-status">Signal Status</button>
-        <button data-action="monitoring-exchange-status">Exchange Status</button>
-        <hr>
-        <label>Shared Memory:</label>
-        <button data-action="monitoring-shared-memory">View Shared Memory</button>
+        <button data-action="view-params">View Params</button>
+        <button data-action="view-status">View Status</button>
     </section>
 
     <section>

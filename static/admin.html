@@ -53,41 +53,12 @@
         <button data-action="off-whitelist">Off</button>
     </section>
 
-    <!-- Reset ExchangeManager -->
+    <!-- Pause/Resume -->
     <section>
-        <h2>Core Control</h2>
-        <label>Exchange Name:</label>
-        <select id="core-control-exchange-name" style="width: 100%;">
-            <option value="BINANCE">BINANCE</option>
-            <option value="UPBIT">UPBIT</option>
-            <option value="BYBIT">BYBIT</option>
-            <option value="BITGET">BITGET</option>
-            <option value="OKX">OKX</option>
-            <option value="MEXC">MEXC</option>
-            <option value="GATE">GATE</option>
-        </select>
-        <button data-action="reset-exchange-manager">Reset ExchangeManager</button>
-        <button data-action="view-exchange-manager">View ExchangeManager</button>
-    </section>
-
-    <section>
-        <h2>PlugIn Control</h2>
-        <h3>- TradingView Hatiko</h3>
-        <label>Exchange Name:
-            <select id="tv-hatiko-exchange-name">
-                <option value="BINANCE">BINANCE</option>
-                <option value="UPBIT">UPBIT</option>
-                <option value="BYBIT">BYBIT</option>
-                <option value="BITGET">BITGET</option>
-                <option value="OKX">OKX</option>
-                <option value="MEXC">MEXC</option>
-                <option value="GATE">GATE</option>
-            </select>
-        </label>
-        <label style="display: block;">Symbols (comma-separated):</label>
-        <textarea id="tv-hatiko-symbols" rows="5" placeholder="BTC/USDT, BTC/USDT.P, BTC/USDT:USDT, ..." style="display: block; width: 100%"></textarea>
-        <button data-action="tv-hatiko-clean-signal-status">Clean Signal Status</button>
-        <button data-action="tv-hatiko-view-signal-status">View Signal Status</button>
+        <h2>Pause/Resume</h2>
+        <label style="display: inline;">Operation:</label>
+        <button data-action="pause-operation">Pause</button>
+        <button data-action="resume-operation">Resume</button>
     </section>
 
     <section>
