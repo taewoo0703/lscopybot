@@ -6,10 +6,11 @@ from settings import settings
 from datetime import datetime
 from core.types import *
 from core.ExchangeManager import *
+from utility.common import print
 
 
 # Master API 로그인
-exchangeManager.initialize()
+await exchangeManager.initialize()  # type: ignore
 api: ebest.OpenApi = exchangeManager.master # 테스트용 API 객체
 
 # ------------- 해외선물 미결제잔고내역 조회 -------------
@@ -21,9 +22,12 @@ inputs = {
     },
 }
 response = await api.request('CIDBQ01500', inputs)  # type: ignore
-if not response['status']:
+if not response:  # type: ignore
     logManager.error(f"해외선물 미결제잔고내역 조회 실패: {api.last_message}")
+else:
+    print(response.body)
 results = response.body['CIDBQ01500OutBlock2']
+results
 """
 results 예시:
 [{
@@ -56,7 +60,7 @@ inputs = {
         'IsuCodeVal': IsuCodeVal, # 종목코드값
         'FutsOrdTpCode': FutsOrdTpCode.NEW, # 선물주문구분코드
         'BnsTpCode': bnsTpCode, # 매매구분코드
-        'AbrdFutsOrdPtnCode': AbrdFutsOrdPtnCode, # 해외선물주문유형코드
+        'AbrdFutsOrdPtnCode': abrdFutsOrdPtnCode, # 해외선물주문유형코드
         'CrcyCode': SPACE, # 통화코드
         'OvrsDrvtOrdPrc': OvrsDrvtOrdPrc, # 해외파생주문가격
         'CndiOrdPrc': CndiOrdPrc, # 조건주문가격
@@ -69,8 +73,11 @@ inputs = {
 response = await api.request('CIDBT00100', inputs) # type: ignore
 if not response: 
     logManager.error(f"해외선물 신규주문 실패: {api.last_message}")
+else:
+    print(response.body)
 
 results = response.body['CIDBT00100OutBlock2']
+results
 ovrsFutsOrgOrdNo = results['OvrsFutsOrdNo']
 """
 results 예시:
@@ -100,5 +107,8 @@ inputs = {
 response = await api.request('CIDBT01000', inputs)  # type: ignore
 if not response: 
     logManager.error(f"해외선물 취소주문 실패: {api.last_message}")
+else:
+    print(response.body)
 
 results = response.body['CIDBT01000OutBlock2']
+results

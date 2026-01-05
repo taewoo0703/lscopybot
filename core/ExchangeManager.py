@@ -109,8 +109,8 @@ class ExchangeManager:
     async def request_new_order(self, 
                                 api: ebest.OpenApi, 
                                 IsuCodeVal: str, # 종목코드
-                                BnsTpCode: BnsTpCode, # 매매구분코드
-                                AbrdFutsOrdPtnCode: AbrdFutsOrdPtnCode, # 해외선물주문유형코드
+                                _BnsTpCode: BnsTpCode, # 매매구분코드
+                                _AbrdFutsOrdPtnCode: AbrdFutsOrdPtnCode, # 해외선물주문유형코드
                                 OvrsDrvtOrdPrc: float, # 해외파생주문가격
                                 CndiOrdPrc: float, # 조건주문가격
                                 OrdQty: int, # 주문수량
@@ -128,8 +128,8 @@ class ExchangeManager:
                 'OrdDt': self.get_today(), # 주문일자
                 'IsuCodeVal': IsuCodeVal, # 종목코드값
                 'FutsOrdTpCode': FutsOrdTpCode.NEW, # 선물주문구분코드
-                'BnsTpCode': BnsTpCode, # 매매구분코드
-                'AbrdFutsOrdPtnCode': AbrdFutsOrdPtnCode, # 해외선물주문유형코드
+                'BnsTpCode': _BnsTpCode, # 매매구분코드
+                'AbrdFutsOrdPtnCode': _AbrdFutsOrdPtnCode, # 해외선물주문유형코드
                 'CrcyCode': SPACE, # 통화코드
                 'OvrsDrvtOrdPrc': OvrsDrvtOrdPrc, # 해외파생주문가격
                 'CndiOrdPrc': CndiOrdPrc, # 조건주문가격
@@ -144,6 +144,7 @@ class ExchangeManager:
             await logManager.log_error_message_async(f'요청 실패: {api.last_message}', "API Request Error")
             return None
         
+        await logManager.log_debug_message_async(f'[Order No. {IsuCodeVal}] {response.body["rsp_msg"]}')
         return response.body['CIDBT00100OutBlock2']
 
     # 해외선물 취소주문
