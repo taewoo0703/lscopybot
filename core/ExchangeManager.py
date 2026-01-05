@@ -127,7 +127,7 @@ class ExchangeManager:
             'CIDBT00100InBlock1': {
                 'OrdDt': self.get_today(), # 주문일자
                 'IsuCodeVal': IsuCodeVal, # 종목코드값
-                'FutsOrdTpCode': '', # 선물주문구분코드
+                'FutsOrdTpCode': FutsOrdTpCode.NEW, # 선물주문구분코드
                 'BnsTpCode': BnsTpCode, # 매매구분코드
                 'AbrdFutsOrdPtnCode': AbrdFutsOrdPtnCode, # 해외선물주문유형코드
                 'CrcyCode': SPACE, # 통화코드
@@ -139,7 +139,7 @@ class ExchangeManager:
                 'ExchCode': SPACE, # 거래소코드
             },
         }
-        response = await api.request('CIDBQ01500', inputs)
+        response = await api.request('CIDBT00100', inputs)
         if not response: 
             await logManager.log_error_message_async(f'요청 실패: {api.last_message}', "API Request Error")
             return None
