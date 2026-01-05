@@ -2,6 +2,14 @@ from enum import Enum
 
 SPACE = ' '
 
+class APIType(str, Enum):
+    """
+    API 구분
+    """
+    MASTER = 'MASTER'   # 마스터 API
+    SLAVE1 = 'SLAVE1'   # 슬레이브1 API
+    SLAVE2 = 'SLAVE2'   # 슬레이브2 API
+
 class AcntTpCode(str, Enum):
     """
     계좌구분코드

@@ -75,7 +75,7 @@ class ExchangeManager:
         return True
 
     # 해외선물 미결제잔고내역 조회
-    async def fetch_open_positions(self, api: ebest.OpenApi) -> None | list[dict]:
+    async def fetch_open_positions(self, api: ebest.OpenApi, type: APIType) -> None | list[dict]:
         """
         해외선물 미결제잔고내역 조회
         returns: list(dict)
@@ -114,6 +114,7 @@ class ExchangeManager:
                                 OvrsDrvtOrdPrc: float, # 해외파생주문가격
                                 CndiOrdPrc: float, # 조건주문가격
                                 OrdQty: int, # 주문수량
+                                type: APIType,
                             ) -> None | dict:
         """
         해외선물 신규주문
@@ -183,7 +184,7 @@ class ExchangeManager:
     async def update_positions(self) -> None:
         # master positions
         if self.master_connected:
-            master_positions = await self.fetch_open_positions(self.master)
+            master_positions = await self.fetch_open_positions(self.master, APIType.MASTER)
             if master_positions is not None:
                 self.master_positions = [{'code': pos['IsuCodeVal'], 'qty': int(pos['BalQty']), 'direction': pos['BnsTpCode']} for pos in master_positions]
             else:
@@ -191,7 +192,7 @@ class ExchangeManager:
 
         # slave1 positions
         if self.slave1_connected:
-            slave1_positions = await self.fetch_open_positions(self.slave1)
+            slave1_positions = await self.fetch_open_positions(self.slave1, APIType.SLAVE1)
             if slave1_positions is not None:
                 self.slave1_positions = [{'code': pos['IsuCodeVal'], 'qty': int(pos['BalQty']), 'direction': pos['BnsTpCode']} for pos in slave1_positions]
             else:
@@ -199,7 +200,7 @@ class ExchangeManager:
 
         # slave2 positions
         if self.slave2_connected:
-            slave2_positions = await self.fetch_open_positions(self.slave2)
+            slave2_positions = await self.fetch_open_positions(self.slave2, APIType.SLAVE2)
             if slave2_positions is not None:
                 self.slave2_positions = [{'code': pos['IsuCodeVal'], 'qty': int(pos['BalQty']), 'direction': pos['BnsTpCode']} for pos in slave2_positions]
             else:
@@ -211,11 +212,11 @@ class ExchangeManager:
         master에 있는 포지션을 slave1, slave2에 카피
         """
         if self.slave1_connected:
-            await self.copy_positions_to_slave(self.slave1, self.slave1_positions)
+            await self.copy_positions_to_slave(self.slave1, self.slave1_positions, APIType.SLAVE1)
         if self.slave2_connected:
-            await self.copy_positions_to_slave(self.slave2, self.slave2_positions)
+            await self.copy_positions_to_slave(self.slave2, self.slave2_positions, APIType.SLAVE2)
 
-    async def copy_positions_to_slave(self, slave_api: ebest.OpenApi, slave_positions: list[dict]):
+    async def copy_positions_to_slave(self, slave_api: ebest.OpenApi, slave_positions: list[dict], type: APIType):
         """
         master_positions와 slave_positions를 비교해서 차이만큼 주문
         """
@@ -267,7 +268,8 @@ class ExchangeManager:
                     AbrdFutsOrdPtnCode=AbrdFutsOrdPtnCode.MARKET,
                     OvrsDrvtOrdPrc=0,  # 시장가이므로 0
                     CndiOrdPrc=0,      # 시장가이므로 0
-                    OrdQty=order_qty
+                    OrdQty=order_qty,
+                    type=type
                 )
                 
                 if result:
