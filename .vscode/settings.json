@@ -1,0 +1,4 @@
+{
+  "python.terminal.launchArgs": ["-m", "IPython", "--no-autoindent"],
+  "python.REPL.enableNativeREPL": false
+}
