@@ -44,15 +44,27 @@ results 예시:
 """
 
 
-
 # ------------- 해외선물 신규주문 -------------
 # 사전 설정값
-IsuCodeVal = 'MNQH23'
+IsuCodeVal = 'MNQH26'
 bnsTpCode = BnsTpCode.LONG  # 매수
 abrdFutsOrdPtnCode = AbrdFutsOrdPtnCode.MARKET  # 시장가
 OvrsDrvtOrdPrc = 0  # 해외파생주문가격 (시장가 주문 시 0)
 CndiOrdPrc = 0  # 조건주문가격 (조건주문 미사용 시 0)
-OrdQty = 1  # 주문수량
+OrdQty = 2  # 주문수량
+
+
+result = await exchangeManager.request_new_order(
+    api=api,
+    IsuCodeVal=IsuCodeVal,
+    _BnsTpCode=bnsTpCode,
+    _AbrdFutsOrdPtnCode=abrdFutsOrdPtnCode,
+    OvrsDrvtOrdPrc=0,  # 시장가이므로 0
+    CndiOrdPrc=0,
+    OrdQty=OrdQty,
+    type=APIType.MASTER,
+)
+
 
 inputs = {
     'CIDBT00100InBlock1': {

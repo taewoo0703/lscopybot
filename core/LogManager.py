@@ -30,12 +30,11 @@ class LogManager(BaseLogManager):
         description = "\n".join(description_lines)
 
         embed = Embed(
-            title=f"[포지션 변경 알림]",
+            title=f"포지션 변경 알림",
             description=description,
             color=0x00FF00,
         )
         await self.log_message_async(embed=embed)
-
 
 
     # 신규 주문 메세지
@@ -60,11 +59,12 @@ class LogManager(BaseLogManager):
         """
         direction = "LONG" if order_info['BnsTpCode'] == BnsTpCode.LONG else "SHORT"
         embed = Embed(
-            title=f"[{type}] 신규 주문",
+            title=f"[{type.value}] 신규 주문",
             description=f"[{order_info['IsuCodeVal']}] {direction} / Qty : {order_info['OrdQty']}",
             color=0x0000FF,
         )
         await self.log_message_async(embed=embed)
+
 
     # 취소 주문 메세지
     @log_level_under("DEBUG")
@@ -81,11 +81,12 @@ class LogManager(BaseLogManager):
             }
         """
         embed = Embed(
-            title=f"[{type}] 취소 주문",
+            title=f"[{type.value}] 취소 주문",
             description=f"[{order_info['IsuCodeVal']}] Order No. : {order_info['OvrsFutsOrgOrdNo']}",
             color=0xFFFFFF,
         )
         await self.log_message_async(embed=embed)
+
 
     # -------------------------------------------- ERROR MESSAGES --------------------------------------------
     # 신규 주문 에러 메세지
@@ -112,11 +113,12 @@ class LogManager(BaseLogManager):
             error = self.get_error(error)
 
         embed = Embed(
-            title=f"[{type}] 신규 주문 실패",
+            title=f"[{type.value}] 신규 주문 실패",
             description=f"[{order_info['IsuCodeVal']}] Qty : {order_info['OrdQty']}\nError: {error}",
             color=0xFF0000,
         )
         await self.log_message_async(embed=embed)
+
 
     # 취소 주문 에러 메세지
     @log_level_under("ERROR")
@@ -136,11 +138,12 @@ class LogManager(BaseLogManager):
             error = self.get_error(error)
 
         embed = Embed(
-            title=f"[{type}] 취소 주문 실패",
+            title=f"[{type.value}] 취소 주문 실패",
             description=f"[{order_info['IsuCodeVal']}] Order No. : {order_info['OvrsFutsOrgOrdNo']}\nError: {error}",
             color=0xFF0000,
         )
         await self.log_message_async(embed=embed)
+
 
     # 포지션 조회 에러 메세지
     @log_level_under("ERROR")
@@ -149,7 +152,7 @@ class LogManager(BaseLogManager):
             error = self.get_error(error)
 
         embed = Embed(
-            title=f"[{type}] 포지션 조회 실패",
+            title=f"[{type.value}] 포지션 조회 실패",
             description=f"Error: {error}",
             color=0xFF0000,
         )

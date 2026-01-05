@@ -100,7 +100,7 @@ class ExchangeManager:
         }
         response = await api.request('CIDBQ01500', inputs)
         if not response: 
-            await logManager.log_error_message_async(f'요청 실패: {api.last_message}', "API Request Error")
+            await logManager.log_fetch_positions_error_message_async(f'API Request Error({api.last_message})', type)
             return None
         
         return response.body['CIDBQ01500OutBlock2']
@@ -126,7 +126,7 @@ class ExchangeManager:
         """
         inputs = {
             'CIDBT00100InBlock1': {
-                'OrdDt': self.get_today(), # 주문일자
+                'OrdDt': '', # 주문일자
                 'IsuCodeVal': IsuCodeVal, # 종목코드값
                 'FutsOrdTpCode': FutsOrdTpCode.NEW, # 선물주문구분코드
                 'BnsTpCode': _BnsTpCode, # 매매구분코드
@@ -142,10 +142,10 @@ class ExchangeManager:
         }
         response = await api.request('CIDBT00100', inputs)
         if not response: 
-            await logManager.log_error_message_async(f'요청 실패: {api.last_message}', "API Request Error")
+            await logManager.log_order_error_message_async(f'API Request Error({api.last_message})', inputs['CIDBT00100InBlock1'], type)
             return None
         
-        await logManager.log_debug_message_async(f'[Order No. {IsuCodeVal}] {response.body["rsp_msg"]}')
+        await logManager.log_order_message_async(inputs['CIDBT00100InBlock1'], type)
         return response.body['CIDBT00100OutBlock2']
 
     # 해외선물 취소주문
@@ -164,7 +164,7 @@ class ExchangeManager:
         """
         inputs = {
             'CIDBT01000InBlock1': {
-                'OrdDt': self.get_today(), # 주문일자
+                'OrdDt': '', # 주문일자
                 'IsuCodeVal': IsuCodeVal, # 종목코드값
                 'OvrsFutsOrgOrdNo': OvrsFutsOrgOrdNo, # 해외선물원주문번호
                 'FutsOrdTpCode': FutsOrdTpCode.CANCEL, # 선물주문구분코드
@@ -174,10 +174,10 @@ class ExchangeManager:
         }
         response = await api.request('CIDBT01000', inputs)
         if not response: 
-            await logManager.log_error_message_async(f'요청 실패: {api.last_message}', "API Request Error")
+            await logManager.log_cancel_order_error_message_async(f'API Request Error({api.last_message})', inputs['CIDBT01000InBlock1'], type)
             return None
         
-        await logManager.log_debug_message_async(f'[Order No. {OvrsFutsOrgOrdNo}] {response.body["rsp_msg"]}')
+        await logManager.log_cancel_order_message_async(inputs['CIDBT01000InBlock1'], type)
         return response.body['CIDBT01000OutBlock2']
 
     # 포지션 업데이트
@@ -264,10 +264,10 @@ class ExchangeManager:
                 result = await self.request_new_order(
                     api=slave_api,
                     IsuCodeVal=code,
-                    BnsTpCode=order_direction,
-                    AbrdFutsOrdPtnCode=AbrdFutsOrdPtnCode.MARKET,
+                    _BnsTpCode=order_direction,
+                    _AbrdFutsOrdPtnCode=AbrdFutsOrdPtnCode.MARKET,
                     OvrsDrvtOrdPrc=0,  # 시장가이므로 0
-                    CndiOrdPrc=0,      # 시장가이므로 0
+                    CndiOrdPrc=0,
                     OrdQty=order_qty,
                     type=type
                 )
@@ -323,7 +323,8 @@ class ExchangeManager:
         
         # compare master positions
         if not self.compare_positions(self.master_positions, self.prev_master_positions):
-            await logManager.log_message_async("Master positions changed, copying to slaves...")
+            await logManager.log_position_change_message_async(self.master_positions)
+            # log_message_async("Master positions changed, copying to slaves...")
             await self.copy_positions()
 
         # save prev positions
