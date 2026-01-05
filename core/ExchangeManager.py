@@ -31,6 +31,9 @@ class ExchangeManager:
         # flags
         self.login_dirty = False
         self.pause = False
+        self.double_check = False
+        self.double_check_counter = 0
+        self.double_check_max = 3
 
     async def initialize(self) -> None:
         # login
@@ -102,8 +105,11 @@ class ExchangeManager:
         if not response: 
             await logManager.log_fetch_positions_error_message_async(f'API Request Error({api.last_message})', type)
             return None
-        
-        return response.body['CIDBQ01500OutBlock2']
+        if 'CIDBQ01500OutBlock2' in response.body:
+            return response.body['CIDBQ01500OutBlock2']
+        else:
+            await logManager.log_fetch_positions_error_message_async(response.response_text, type)
+            return None
 
     # 해외선물 신규주문
     async def request_new_order(self, 
@@ -144,9 +150,12 @@ class ExchangeManager:
         if not response: 
             await logManager.log_order_error_message_async(f'API Request Error({api.last_message})', inputs['CIDBT00100InBlock1'], type)
             return None
-        
-        await logManager.log_order_message_async(inputs['CIDBT00100InBlock1'], type)
-        return response.body['CIDBT00100OutBlock2']
+        if 'CIDBT00100OutBlock2' in response.body:
+            await logManager.log_order_message_async(inputs['CIDBT00100InBlock1'], type)
+            return response.body['CIDBT00100OutBlock2']
+        else:
+            await logManager.log_order_error_message_async(response.response_text, inputs['CIDBT00100InBlock1'], type)
+            return None
 
     # 해외선물 취소주문
     async def request_cancel_order(self, 
@@ -176,9 +185,12 @@ class ExchangeManager:
         if not response: 
             await logManager.log_cancel_order_error_message_async(f'API Request Error({api.last_message})', inputs['CIDBT01000InBlock1'], type)
             return None
-        
-        await logManager.log_cancel_order_message_async(inputs['CIDBT01000InBlock1'], type)
-        return response.body['CIDBT01000OutBlock2']
+        if 'CIDBT01000OutBlock2' in response.body:
+            await logManager.log_cancel_order_message_async(inputs['CIDBT01000InBlock1'], type)
+            return response.body['CIDBT01000OutBlock2']
+        else:
+            await logManager.log_cancel_order_error_message_async(response.response_text, inputs['CIDBT01000InBlock1'], type)
+            return None
 
     # 포지션 업데이트
     async def update_positions(self) -> None:
@@ -272,14 +284,11 @@ class ExchangeManager:
                     type=type
                 )
                 
-                if result:
-                    await logManager.log_message_async(f"Ordered {code} {order_qty}qty [{order_direction}] on slave (master_net: {master_net}, slave_net: {slave_net})")
-                else:
-                    self.login_dirty = True
-                    await logManager.log_error_message_async(f"Failed to order {code} {order_qty}qty [{order_direction}] on slave", "Order Error")
+                # if not result:
+                #     self.login_dirty = True
                     
             except Exception as e:
-                await logManager.log_error_message_async(f"Error ordering {code}: {str(e)}", "Order Error")
+                await logManager.log_error_message_async(f"[{type.value}]Error ordering {code}: {str(e)}", "Order Error")
         
     # 포지션 두개 비교
     def compare_positions(self, a: list[dict], b: list[dict]) -> bool:
@@ -326,6 +335,19 @@ class ExchangeManager:
             await logManager.log_position_change_message_async(self.master_positions)
             # log_message_async("Master positions changed, copying to slaves...")
             await self.copy_positions()
+            self.double_check = True
+            self.double_check_counter = 0
+
+        # double check
+        if self.double_check:
+            self.double_check_counter += 1
+            if self.double_check_counter >= self.double_check_max:
+                # copy positions again
+                logManager.log_debug_message("Double check: copying positions again...")
+                await self.copy_positions()
+                self.double_check = False
+                self.double_check_counter = 0
+                
 
         # save prev positions
         self.prev_master_positions = copy.deepcopy(self.master_positions)
