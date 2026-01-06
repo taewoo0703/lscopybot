@@ -10,6 +10,13 @@ class APIType(str, Enum):
     SLAVE1 = 'SLAVE1'   # 슬레이브1 API
     SLAVE2 = 'SLAVE2'   # 슬레이브2 API
 
+class ErrorMsg(str, Enum):
+    EXPIRED_TOKEN = '기간이 만료된 token'
+    INVALID_TOKEN = '유효하지 않은 token'
+    SERVICE_DELAY = '서비스가 지연'
+    NOT_ENOUGH_BALANCE = '주문가능금액을 초과'
+
+# ------------------------------ LS 증권 API 코드 정의 ------------------------------ #
 class AcntTpCode(str, Enum):
     """
     계좌구분코드

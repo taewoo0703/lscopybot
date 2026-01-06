@@ -104,11 +104,13 @@ class ExchangeManager:
         response = await api.request('CIDBQ01500', inputs)
         if not response: 
             await logManager.log_fetch_positions_error_message_async(f'API Request Error({api.last_message})', type)
+            self.check_rsp_msg(api.last_message)
             return None
         if 'CIDBQ01500OutBlock2' in response.body:
             return response.body['CIDBQ01500OutBlock2']
         else:
             await logManager.log_fetch_positions_error_message_async(response.response_text, type)
+            self.check_rsp_msg(response.response_text)
             return None
 
     # 해외선물 신규주문
@@ -149,12 +151,14 @@ class ExchangeManager:
         response = await api.request('CIDBT00100', inputs)
         if not response: 
             await logManager.log_order_error_message_async(f'API Request Error({api.last_message})', inputs['CIDBT00100InBlock1'], type)
+            self.check_rsp_msg(api.last_message)
             return None
         if 'CIDBT00100OutBlock2' in response.body:
             await logManager.log_order_message_async(inputs['CIDBT00100InBlock1'], type)
             return response.body['CIDBT00100OutBlock2']
         else:
             await logManager.log_order_error_message_async(response.response_text, inputs['CIDBT00100InBlock1'], type)
+            self.check_rsp_msg(response.response_text)
             return None
 
     # 해외선물 취소주문
@@ -184,12 +188,14 @@ class ExchangeManager:
         response = await api.request('CIDBT01000', inputs)
         if not response: 
             await logManager.log_cancel_order_error_message_async(f'API Request Error({api.last_message})', inputs['CIDBT01000InBlock1'], type)
+            self.check_rsp_msg(api.last_message)
             return None
         if 'CIDBT01000OutBlock2' in response.body:
             await logManager.log_cancel_order_message_async(inputs['CIDBT01000InBlock1'], type)
             return response.body['CIDBT01000OutBlock2']
         else:
             await logManager.log_cancel_order_error_message_async(response.response_text, inputs['CIDBT01000InBlock1'], type)
+            self.check_rsp_msg(response.response_text)
             return None
 
     # 포지션 업데이트
@@ -199,24 +205,18 @@ class ExchangeManager:
             master_positions = await self.fetch_open_positions(self.master, APIType.MASTER)
             if master_positions is not None:
                 self.master_positions = [{'code': pos['IsuCodeVal'], 'qty': int(pos['BalQty']), 'direction': pos['BnsTpCode']} for pos in master_positions]
-            else:
-                self.login_dirty = True
 
         # slave1 positions
         if self.slave1_connected:
             slave1_positions = await self.fetch_open_positions(self.slave1, APIType.SLAVE1)
             if slave1_positions is not None:
                 self.slave1_positions = [{'code': pos['IsuCodeVal'], 'qty': int(pos['BalQty']), 'direction': pos['BnsTpCode']} for pos in slave1_positions]
-            else:
-                self.login_dirty = True
 
         # slave2 positions
         if self.slave2_connected:
             slave2_positions = await self.fetch_open_positions(self.slave2, APIType.SLAVE2)
             if slave2_positions is not None:
                 self.slave2_positions = [{'code': pos['IsuCodeVal'], 'qty': int(pos['BalQty']), 'direction': pos['BnsTpCode']} for pos in slave2_positions]
-            else:
-                self.login_dirty = True
 
     # 포지션 카피
     async def copy_positions(self):
@@ -317,14 +317,7 @@ class ExchangeManager:
         # check login dirty
         if self.login_dirty:
             await logManager.log_message_async("Re-login due to login dirty...")
-            # login
-            await self.login(self.master)
-            await self.login(self.slave1)
-            await self.login(self.slave2)
-            # set connected status
-            self.master_connected = self.master._connected
-            self.slave1_connected = self.slave1._connected
-            self.slave2_connected = self.slave2._connected
+            self.relogin()
             self.login_dirty = False
 
         # update positions
@@ -358,6 +351,34 @@ class ExchangeManager:
     def set_pause(self, pause: bool) -> None:
         self.pause = pause
     
+    # check response message
+    def check_rsp_msg(self, rsp_msg: str):
+        if ErrorMsg.EXPIRED_TOKEN in rsp_msg:
+            self.login_dirty = True
+        elif ErrorMsg.INVALID_TOKEN in rsp_msg:
+            self.login_dirty = True
+        elif ErrorMsg.SERVICE_DELAY in rsp_msg:
+            pass
+        elif ErrorMsg.NOT_ENOUGH_BALANCE in rsp_msg:
+            pass
+
+    # relogin
+    def relogin(self) -> None:
+        # login
+        if self.master_connected:
+            self.master = ebest.OpenApi()
+            self.login(self.master)
+        if self.slave1_connected:
+            self.slave1 = ebest.OpenApi()
+            self.login(self.slave1)
+        if self.slave2_connected:
+            self.slave2 = ebest.OpenApi()
+            self.login(self.slave2)
+
+        # set connected status
+        self.master_connected = self.master._connected
+        self.slave1_connected = self.slave1._connected
+        self.slave2_connected = self.slave2._connected
 
 # singleton instance
 exchangeManager = ExchangeManager()
