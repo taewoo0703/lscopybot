@@ -6,8 +6,6 @@ packages_upgrade: true
 packages:
   - curl
   - git
-  - python3-pip
-  - python3.12-venv
   - net-tools
   - unzip
   - ntp
@@ -102,7 +100,7 @@ write_files:
     SLAVE1_SECRET_KEY=""
     SLAVE2_APP_KEY=""
     SLAVE2_SECRET_KEY=""
-    DISCORD_WEBHOOK_URL="https://discord.com/api/webhooks/1458021711390834720/tQwSx7EUz_ZVCGUTbBvIzpiX-4UxfMd91CyUKwBBBnW58ZBbGTNSs-lhLJjkkN-n8rJm"
+    DISCORD_WEBHOOK_URL=""
     WHITELIST=[]
     PORT="80"
     USE_WHITELIST="0"
@@ -283,6 +281,11 @@ runcmd:
   - export HOME="/root"
   - timedatectl set-timezone Asia/Seoul
   - curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+  - apt-get update
+  - apt-get install -y python3-pip
+  - apt-get install -y python3.12-venv
+  - python3.12 -m pip install --upgrade pip
+  - apt-get install -y python3.12-venv
   - apt-get install -y nodejs
   - npm install -g pm2
   - ufw allow ssh
@@ -297,7 +300,7 @@ runcmd:
   - chmod +x /usr/bin/caddy
   - rm -rf caddy_*_linux_amd64.tar.gz
   - git clone  "https://github.com/taewoo0703/lscopybot.git" /root/lscopybot
-  - python3.12 -m venv /root/lscopybot/.venv
+  - python3.12 -m venv /root/lscopybot/.venv --system-site-packages
   - /root/lscopybot/.venv/bin/python3.12 -m pip install -r /root/lscopybot/requirements.txt
   - cd "/root"
   - |
