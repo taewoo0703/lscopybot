@@ -30,7 +30,7 @@ def log_level_under(level: LOGGER_LEVEL_LITERAL):
 class BaseLogManager:
     def __init__(self, discord_webhook_url: str | None = None):
         self.discord_webhook_url = discord_webhook_url
-        self.log_level: LOGGER_LEVEL_LITERAL = "TRACE"
+        self.log_level: LOGGER_LEVEL_LITERAL = "DEBUG"
 
         current_dir = os.path.dirname(os.path.abspath(__file__))
         project_root = os.path.dirname(current_dir) 
