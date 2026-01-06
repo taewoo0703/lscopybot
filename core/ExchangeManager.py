@@ -1,5 +1,5 @@
 from .LogManager import logManager
-from .schemas import BettingParams
+from .schemas import *
 from typing import Literal
 import asyncio, ebest, copy
 from settings import settings
@@ -264,7 +264,12 @@ class ExchangeManager:
                         slave_net -= pos['qty']
 
             # 필요한 주문량과 방향 계산
-            diff = master_net - slave_net
+            multiple = 1
+            if (type == APIType.SLAVE1):
+                multiple = betting_params.slave1_multiple
+            elif (type == APIType.SLAVE2):
+                multiple = betting_params.slave2_multiple
+            diff = master_net * multiple - slave_net
             
             if diff == 0:
                 continue  # 차이가 없으면 주문할 필요 없음
