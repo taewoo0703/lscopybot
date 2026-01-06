@@ -133,7 +133,7 @@ class Core:
         update timer에 의해 호출되는 메서드
         """
         await exchangeManager.on_timer_update()
-        logManager.debug(f"on_timer_update - {timeframe} 완료")
+        logManager.trace(f"on_timer_update - {timeframe} 완료")
 
     # done call back - update
     def timer_update_done_callback(self, task):
