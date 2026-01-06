@@ -321,7 +321,7 @@ class ExchangeManager:
 
         # check login dirty
         if self.login_dirty:
-            await logManager.log_message_async("Re-login due to login dirty...")
+            await logManager.log_debug_message_async("Re-login due to login dirty...")
             self.relogin()
             self.login_dirty = False
 
@@ -341,7 +341,7 @@ class ExchangeManager:
             self.double_check_counter += 1
             if self.double_check_counter >= self.double_check_max:
                 # copy positions again
-                logManager.log_debug_message("Double check: copying positions again...")
+                await logManager.log_debug_message_async("Double check: copying positions again...")
                 await self.copy_positions()
                 self.double_check = False
                 self.double_check_counter = 0
