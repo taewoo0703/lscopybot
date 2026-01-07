@@ -322,7 +322,7 @@ class ExchangeManager:
         # check login dirty
         if self.login_dirty:
             await logManager.log_debug_message_async("Re-login due to login dirty...")
-            self.relogin()
+            await self.relogin()
             self.login_dirty = False
 
         # update positions
@@ -363,22 +363,22 @@ class ExchangeManager:
         elif ErrorMsg.INVALID_TOKEN in rsp_msg:
             self.login_dirty = True
         elif ErrorMsg.SERVICE_DELAY in rsp_msg:
-            pass
+            return
         elif ErrorMsg.NOT_ENOUGH_BALANCE in rsp_msg:
-            pass
+            return
 
     # relogin
-    def relogin(self) -> None:
+    async def relogin(self) -> None:
         # login
         if self.master_connected:
             self.master = ebest.OpenApi()
-            self.login(self.master)
+            await self.login(self.master)
         if self.slave1_connected:
             self.slave1 = ebest.OpenApi()
-            self.login(self.slave1)
+            await self.login(self.slave1)
         if self.slave2_connected:
             self.slave2 = ebest.OpenApi()
-            self.login(self.slave2)
+            await self.login(self.slave2)
 
         # set connected status
         self.master_connected = self.master._connected
