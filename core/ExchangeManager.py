@@ -371,13 +371,13 @@ class ExchangeManager:
     async def relogin(self) -> None:
         # login
         if self.master_connected:
-            self.master = ebest.OpenApi()
+            await self.master.close()
             await self.login(self.master)
         if self.slave1_connected:
-            self.slave1 = ebest.OpenApi()
+            await self.slave1.close()
             await self.login(self.slave1)
         if self.slave2_connected:
-            self.slave2 = ebest.OpenApi()
+            await self.slave2.close()
             await self.login(self.slave2)
 
         # set connected status
