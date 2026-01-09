@@ -50,7 +50,7 @@ class ExchangeManager:
         return datetime.now().strftime('%Y%m%d')
 
     # 로그인
-    async def login(self, api: ebest.OpenApi) -> bool:
+    async def login(self, api: ebest.OpenApi, relogin: bool=False) -> bool:
         app_key = ""
         secret_key = ""
         name = ""
@@ -70,11 +70,22 @@ class ExchangeManager:
             await logManager.log_error_message_async("Unknown API instance", "Login Error")
             return False
         
-        if not await api.login(app_key, secret_key):
-            await logManager.log_error_message_async(f"[{name}] {api._last_message}", "API Login Error")
+        login_success = await api.login(app_key, secret_key)
+
+        if not login_success:
+            is_ignorable = "appkey or appsecretkey is empty" in api._last_message
+            if not (relogin and is_ignorable):
+                await logManager.log_error_message_async(f"[{name}] {api._last_message}", "API Login Error")
             return False
-        
-        await logManager.log_message_async(f"[{name}] Login successful")
+
+        # login 성공
+        log_func = (
+            logManager.log_debug_message_async
+            if relogin
+            else logManager.log_message_async
+        )
+
+        await log_func(f"[{name}] {'Re-' if relogin else ''}login successful")
         return True
 
     # 해외선물 미결제잔고내역 조회
