@@ -115,13 +115,13 @@ class ExchangeManager:
         response = await api.request('CIDBQ01500', inputs)
         if not response: 
             await logManager.log_fetch_positions_error_message_async(f'API Request Error({api.last_message})', type)
-            self.check_rsp_msg(api.last_message)
+            self.check_rsp_msg(str(api.last_message))
             return None
         if 'CIDBQ01500OutBlock2' in response.body:
             return response.body['CIDBQ01500OutBlock2']
         else:
             await logManager.log_fetch_positions_error_message_async(response.response_text, type)
-            self.check_rsp_msg(response.response_text)
+            self.check_rsp_msg(str(response.response_text))
             return None
 
     # 해외선물 신규주문
@@ -162,14 +162,14 @@ class ExchangeManager:
         response = await api.request('CIDBT00100', inputs)
         if not response: 
             await logManager.log_order_error_message_async(f'API Request Error({api.last_message})', inputs['CIDBT00100InBlock1'], type)
-            self.check_rsp_msg(api.last_message)
+            self.check_rsp_msg(str(api.last_message))
             return None
         if 'CIDBT00100OutBlock2' in response.body:
             await logManager.log_order_message_async(inputs['CIDBT00100InBlock1'], type)
             return response.body['CIDBT00100OutBlock2']
         else:
             await logManager.log_order_error_message_async(response.response_text, inputs['CIDBT00100InBlock1'], type)
-            self.check_rsp_msg(response.response_text)
+            self.check_rsp_msg(str(response.response_text))
             return None
 
     # 해외선물 취소주문
@@ -199,14 +199,14 @@ class ExchangeManager:
         response = await api.request('CIDBT01000', inputs)
         if not response: 
             await logManager.log_cancel_order_error_message_async(f'API Request Error({api.last_message})', inputs['CIDBT01000InBlock1'], type)
-            self.check_rsp_msg(api.last_message)
+            self.check_rsp_msg(str(api.last_message))
             return None
         if 'CIDBT01000OutBlock2' in response.body:
             await logManager.log_cancel_order_message_async(inputs['CIDBT01000InBlock1'], type)
             return response.body['CIDBT01000OutBlock2']
         else:
             await logManager.log_cancel_order_error_message_async(response.response_text, inputs['CIDBT01000InBlock1'], type)
-            self.check_rsp_msg(response.response_text)
+            self.check_rsp_msg(str(response.response_text))
             return None
 
     # 포지션 업데이트
